@@ -186,3 +186,54 @@ plt.savefig('output/feature_importance_per_year.png')
 print(f'Feature Importance per Year plot saved to output/feature_importance_per_year.png')
 if SHOW_PLOTS:
     plt.show()
+
+#%%
+print(f'\n#########################################################')
+df = token_metadata_sales_fx.copy()
+cb = CatBoostRegressor(verbose=0)
+tmp_drop_cols = ['token_index', 
+             'usd', 
+             'eth',
+             'eth_usd', 
+             'eth_usd_normalized', 
+             'rarity_score_calculated', 
+             'rarity_score', 
+             'rarest_property_name', 
+             'Trait Count', 
+             'open']
+print('Normalizing the data...')
+#normalize values between 0 and 1 based on the date of sale
+df = df.drop(columns=tmp_drop_cols)
+df = df.groupby('date').transform(lambda x: (x - x.min()) / (x.max() - x.min()))
+df['eth'] = token_metadata_sales_fx['eth']
+
+print(f'Fitting the model after normalization...')
+df.reset_index(inplace=True)
+df.drop(columns='index', inplace=True)
+
+#train the model
+X = df.drop(columns=EVALUATION_COLUMN)
+y = df[EVALUATION_COLUMN]
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+cb.fit(X_train, y_train)
+y_pred = cb.predict(X_test)
+mse = mean_squared_error(y_test, y_pred)
+print(f'Mean Squared Error after normalization: {mse}')
+
+print(f'\n#########################################################')
+print(f'Feature Importance after normalization')
+feature_importance = pd.DataFrame({'feature': X.columns, 'importance': cb.feature_importances_})
+feature_importance = feature_importance.sort_values(by='importance', ascending=False)
+print(f'{feature_importance}')
+if not os.path.exists('output'):
+    os.makedirs('output')
+feature_importance.to_csv('output/feature_importance_normalized.csv', index=False)
+print(f'Feature Importance after normalization saved to output/feature_importance_normalized.csv')
+
+plt.figure(figsize=(10, 6))
+sns.barplot(data=feature_importance, x='importance', y='feature')
+plt.title('Feature Importance after normalization')
+plt.savefig('output/feature_importance_normalized.png')
+print(f'Feature Importance after normalization plot saved to output/feature_importance_normalized.png')
+if SHOW_PLOTS:
+    plt.show()
