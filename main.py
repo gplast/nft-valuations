@@ -41,10 +41,10 @@ token_sales = token_sales.dropna(axis=1, how='all')
 #rarity score for each trait value by iterate each row
 print(f'\n#########################################################')
 print(f'Calculating rarity score for each trait value')
-drop_cols = ['token_index', 'Trait Count', 'rarest_property_name', 'rarity_score']
+drop_cols_rarity = ['token_index', 'Trait Count', 'rarest_property_name', 'rarity_score']
 
 for col in token_metadata.columns:
-    if col in drop_cols:
+    if col in drop_cols_rarity:
         continue
     #nan values are not considered in the value count
     token_metadata[col] = token_metadata[col].fillna('nan')
@@ -54,8 +54,7 @@ for col in token_metadata.columns:
     token_metadata[col] = 1 / token_metadata[col]
 
 #calculate the rarity score to check if it matches the rarity score column
-drop_cols = ['token_index', 'Trait Count', 'rarest_property_name', 'rarity_score']
-token_metadata['rarity_score_calculated'] = token_metadata.drop(columns=drop_cols).sum(axis=1)
+token_metadata['rarity_score_calculated'] = token_metadata.drop(columns=drop_cols_rarity).sum(axis=1)
 #print average difference between the calculated rarity score and the rarity score column
 print(f'Average difference between the calculated rarity score and the rarity score column: {abs(token_metadata["rarity_score_calculated"] - token_metadata["rarity_score"]).mean()}')
 print(f'Rarity score calculated successfully')
@@ -92,6 +91,7 @@ token_metadata_sales_fx['eth_usd_normalized'] = token_metadata_sales_fx['eth_usd
 # token_metadata_sales_fx['eth_usd_pct_change'] = token_metadata_sales_fx['eth_usd_pct_change'].fillna(0)
 print(f'Preprocessing and merging data completed')
 
+#%%
 #%%
 print(f'\n#########################################################')
 print(f'Fitting the model...')
