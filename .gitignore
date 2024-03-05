@@ -163,3 +163,4 @@ cython_debug/
 *.csv
 catboost_info/
 20230509
+.DS_Store
