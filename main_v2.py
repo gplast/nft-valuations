@@ -11,10 +11,10 @@ import os
 
 SHOW_PLOTS = False
 EVALUATION_COLUMN = 'eth'
-drop_cols = ['token_index', 
+drop_cols = ['token_index',
              'eth', 
              'usd', 
-             'date', 
+             'date',
              'eth_usd', 
              'eth_usd_normalized', 
              'rarity_score_calculated', 
@@ -92,6 +92,21 @@ token_metadata_sales_fx['eth_usd_normalized'] = token_metadata_sales_fx['eth_usd
 print(f'Preprocessing and merging data completed')
 
 #%%
+#create additional columns for each token sale for each year and merge on token_index
+#if there are multiple sales for a token in a year then take the average of the price
+#add each year as a sale_year column
+print(f'\n#########################################################')
+print(f'Creating additional columns for each token sale for each year...')
+token_metadata_sales_fx['date'] = pd.to_datetime(token_metadata_sales_fx['date'])
+for year in token_metadata_sales_fx['date'].dt.year.unique():
+    token_metadata_sales_fx[f'eth_{year}'] = token_metadata_sales_fx[token_metadata_sales_fx['date'].dt.year == year]['eth']
+    token_metadata_sales_fx[f'eth_{year}'] = token_metadata_sales_fx.groupby('token_index')[f'eth_{year}'].transform('mean')
+    token_metadata_sales_fx[f'eth_usd_{year}'] = token_metadata_sales_fx[token_metadata_sales_fx['date'].dt.year == year]['eth_usd']
+    token_metadata_sales_fx[f'eth_usd_{year}'] = token_metadata_sales_fx.groupby('token_index')[f'eth_usd_{year}'].transform('mean')
+print(f'Additional columns for each token sale for each year created successfully')
+#keep only the latest sale for each token
+token_metadata_sales_fx = token_metadata_sales_fx.drop_duplicates(subset='token_index', keep='last')
+token_metadata_sales_fx.fillna(0, inplace=True)
 #%%
 print(f'\n#########################################################')
 print(f'Fitting the model...')
@@ -104,7 +119,7 @@ df['date'] = pd.to_datetime(df['date'])
 rarity_score_99 = df['rarity_score'].quantile(0.90)
 rarity_score_01 = df['rarity_score'].quantile(0.01)
 
-df = df[(df['date'].dt.year < 2019) | (df['date'].dt.year > 2021)]
+# df = df[(df['date'].dt.year < 2019) | (df['date'].dt.year > 2021)]
 df = df[df['rarity_score'] < rarity_score_99]
 df = df[df['rarity_score'] > rarity_score_01]
 
@@ -135,17 +150,16 @@ feature_importance = feature_importance.sort_values(by='importance', ascending=F
 print(f'{feature_importance}')
 if not os.path.exists('output'):
     os.makedirs('output')
-feature_importance.to_csv('output/feature_importance.csv', index=False)
-print(f'Feature Importance saved to output/feature_importance.csv')
+feature_importance.to_csv('output/feature_importance_v2.csv', index=False)
+print(f'Feature Importance saved to output/feature_importance_v2.csv')
 
 plt.figure(figsize=(10, 6))
 sns.barplot(data=feature_importance, x='importance', y='feature')
 plt.title('Feature Importance')
-plt.savefig('output/feature_importance.png')
-print(f'Feature Importance plot saved to output/feature_importance.png')
+plt.savefig('output/feature_importance_v2.png')
+print(f'Feature Importance plot saved to output/feature_importance_v2.png')
 if SHOW_PLOTS:
     plt.show()
-
 #%%
 print(f'\n#########################################################')
 print(f'Predicting the valuation of each token...')
@@ -159,10 +173,9 @@ print(f'Predicted valuation of each token successfully')
 #save the predicted valuation to a csv file
 if not os.path.exists('output'):
     os.makedirs('output')
-df.to_csv('output/predicted_valuation.csv', index=False)
-print(f'Predicted valuation saved to output/predicted_valuation.csv')
+df.to_csv('output/predicted_valuation_v2.csv', index=False)
+print(f'Predicted valuation saved to output/predicted_valuation_v2.csv')
 print(f'Predicted valuation completed')
-
 
 #%%
 print(f'\n#########################################################')
@@ -199,15 +212,15 @@ print(f'Feature Importance per Year')
 print(f'{feature_importance}')
 if not os.path.exists('output'):
     os.makedirs('output')
-feature_importance.to_csv('output/feature_importance_per_year.csv', index=False)
-print(f'Feature Importance per Year saved to output/feature_importance_per_year.csv')
+feature_importance.to_csv('output/feature_importance_per_year_v2.csv', index=False)
+print(f'Feature Importance per Year saved to output/feature_importance_per_year_v2.csv')
 
 #plot the feature importance per year
 plt.figure(figsize=(10, 6))
 sns.barplot(data=feature_importance, x='importance', y='feature', hue='year')
 plt.title('Feature Importance per Year')
-plt.savefig('output/feature_importance_per_year.png')
-print(f'Feature Importance per Year plot saved to output/feature_importance_per_year.png')
+plt.savefig('output/feature_importance_per_year_v2.png')
+print(f'Feature Importance per Year plot saved to output/feature_importance_per_year_v2.png')
 if SHOW_PLOTS:
     plt.show()
 
@@ -252,13 +265,13 @@ if EVALUATION_COLUMN == 'eth':
     print(f'{feature_importance}')
     if not os.path.exists('output'):
         os.makedirs('output')
-    feature_importance.to_csv('output/feature_importance_normalized.csv', index=False)
-    print(f'Feature Importance after normalization saved to output/feature_importance_normalized.csv')
+    feature_importance.to_csv('output/feature_importance_normalized_v2.csv', index=False)
+    print(f'Feature Importance after normalization saved to output/feature_importance_normalized_v2.csv')
 
     plt.figure(figsize=(10, 6))
     sns.barplot(data=feature_importance, x='importance', y='feature')
     plt.title('Feature Importance after normalization')
-    plt.savefig('output/feature_importance_normalized.png')
-    print(f'Feature Importance after normalization plot saved to output/feature_importance_normalized.png')
+    plt.savefig('output/feature_importance_normalized_v2.png')
+    print(f'Feature Importance after normalization plot saved to output/feature_importance_normalized_v2.png')
     if SHOW_PLOTS:
         plt.show()
